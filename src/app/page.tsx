@@ -1,65 +1,68 @@
-import Image from "next/image";
+export default function InicioPage() {
+  const nombre = "Alan"; // luego vendrá del backend
 
-export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-white px-5 py-10">
+      <div className="mx-auto w-full max-w-5xl">
+        {/* Encabezado */}
+        <header className="mb-12 mt-10">
+          <h1 className="text-3xl font-semibold text-[color:var(--text)]">
+            Hola {nombre}
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <p className="mt-2 text-sm text-[#8a94a3]">Bienvenido de nuevo</p>
+        </header>
+
+        {/* Grid principal */}
+        <section className="grid grid-cols-2 grid-rows-2 gap-6">
+          {/* Ingresos (arriba izquierda) */}
+          <article className="rounded-2xl bg-[#f6f5f9] p-6 h-44 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+            <div className="text-xs uppercase tracking-wide text-[#8a94a3]">
+              Ingresos
+            </div>
+            <div className="mt-3 text-2xl font-semibold text-[color:var(--text)]">
+              $58,420
+            </div>
+            <div className="mt-1 text-xs text-[#8a94a3]">Mes en curso</div>
+          </article>
+
+          {/* Gastos (arriba derecha) — ligeramente más grande */}
+          <article className="rounded-2xl bg-[#f6f5f9] p-6 h-48 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+            <div className="text-xs uppercase tracking-wide text-[#8a94a3]">
+              Gastos
+            </div>
+            <div className="mt-3 text-3xl font-semibold text-[color:var(--text)]">
+              $41,300
+            </div>
+            <div className="mt-1 text-xs text-[#8a94a3]">Mes en curso</div>
+          </article>
+
+          {/* Movimientos (abajo izquierda) — ligeramente más grande */}
+          <article className="rounded-2xl bg-[#f6f5f9] p-6 h-48 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+            <div className="text-xs uppercase tracking-wide text-[#8a94a3]">
+              Movimientos
+            </div>
+            <div className="mt-3 text-3xl font-semibold text-[color:var(--text)]">
+              128
+            </div>
+            <div className="mt-1 text-xs text-[#8a94a3]">Últimos 7 días</div>
+          </article>
+
+          {/* Balance (abajo derecha) — con gradiente fijo */}
+          <article
+            className="rounded-2xl p-6 h-44 text-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--brand) 0%, #2b4c6a 100%)",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div className="text-xs uppercase tracking-wide opacity-90">
+              Balance general
+            </div>
+            <div className="mt-3 text-2xl font-semibold">$17,120</div>
+            <div className="mt-1 text-xs opacity-80">Disponible</div>
+          </article>
+        </section>
+      </div>
+    </main>
   );
 }
