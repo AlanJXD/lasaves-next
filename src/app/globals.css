@@ -7,8 +7,8 @@
 }
 
 body {
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: #fff;
 }
 
@@ -24,4 +24,25 @@ body {
 .animate-shine {
   animation: shine 3s linear infinite;
   background-size: 200% auto;
+}
+
+:root {
+  --tabbar-h: 64px; /* altura visual de tu BottomTab */
+}
+
+/* padding inferior seguro para vistas con FAB */
+.pb-safe-tabbar {
+  padding-bottom: calc(
+    env(safe-area-inset-bottom, 0px) + var(--tabbar-h) + 96px
+  );
+}
+
+/* posición segura del FAB sobre el tabbar */
+.fab-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--tabbar-h) + 36px);
+}
+
+/* si quieres top safe para headers */
+.pt-safe-top {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
 }

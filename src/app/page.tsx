@@ -1,16 +1,23 @@
+"use client";
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function InicioPage() {
-  const nombre = "Alan"; // luego vendrá del backend
+  const { user } = useAuth();
+  const nombre = user?.nombre || "Usuario";
 
   return (
-    <main className="min-h-screen bg-white px-5 py-10">
-      <div className="mx-auto w-full max-w-5xl">
-        {/* Encabezado */}
-        <header className="mb-12 mt-10">
-          <h1 className="text-3xl font-semibold text-[color:var(--text)]">
-            Hola {nombre}
-          </h1>
-          <p className="mt-2 text-sm text-[#8a94a3]">Bienvenido de nuevo</p>
-        </header>
+    <ProtectedRoute>
+      <main className="min-h-screen bg-white px-5 py-10">
+        <div className="mx-auto w-full max-w-5xl">
+          {/* Encabezado */}
+          <header className="mb-12 mt-10">
+            <h1 className="text-3xl font-semibold text-[color:var(--text)]">
+              Hola {nombre}
+            </h1>
+            <p className="mt-2 text-sm text-[#8a94a3]">Bienvenido de nuevo</p>
+          </header>
 
         {/* Grid principal */}
         <section className="grid grid-cols-2 grid-rows-2 gap-6">
@@ -64,5 +71,6 @@ export default function InicioPage() {
         </section>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }
