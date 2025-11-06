@@ -3,13 +3,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, CameraIcon, PhotoIcon, CheckIcon } from '@heroicons/react/24/solid';
-import { MetodoPago } from '@/lib/finanzas';
+import { MetodoPago, Servicio, finanzasService } from '@/lib/finanzas';
 
 interface ModalMovimientoProps {
   isOpen: boolean;
   onClose: () => void;
   metodosPago: MetodoPago[];
   onSubmit: (data: FormData, tipo: 'ingreso' | 'gasto') => Promise<void>;
+  modoEdicion?: boolean;
+  datosIniciales?: {
+    tipo: 'ingreso' | 'gasto';
+    id: number;
+    monto: string;
+    concepto: string;
+    metodo_pago_id: number;
+    servicio_id?: number;
+    notas?: string;
+    comprobante_url?: string;
+  };
 }
 
 export default function ModalMovimiento({
@@ -17,11 +28,15 @@ export default function ModalMovimiento({
   onClose,
   metodosPago,
   onSubmit,
+  modoEdicion = false,
+  datosIniciales,
 }: ModalMovimientoProps) {
   const [tipoActivo, setTipoActivo] = useState<'ingreso' | 'gasto'>('gasto');
   const [monto, setMonto] = useState('');
   const [concepto, setConcepto] = useState('');
   const [metodoPagoId, setMetodoPagoId] = useState('');
+  const [servicioId, setServicioId] = useState('');
+  const [servicios, setServicios] = useState<Servicio[]>([]);
   const [mostrarNotas, setMostrarNotas] = useState(false);
   const [notas, setNotas] = useState('');
   const [imagenes, setImagenes] = useState<File[]>([]);
@@ -30,19 +45,47 @@ export default function ModalMovimiento({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resetear formulario cuando se abre
+  // Cargar servicios al montar
+  useEffect(() => {
+    const cargarServicios = async () => {
+      try {
+        const serviciosData = await finanzasService.obtenerServicios();
+        setServicios(serviciosData);
+      } catch (err) {
+        console.error("Error al cargar servicios:", err);
+      }
+    };
+    cargarServicios();
+  }, []);
+
+  // Resetear o cargar datos cuando se abre
   useEffect(() => {
     if (isOpen) {
-      setTipoActivo('gasto');
-      setMonto('');
-      setConcepto('');
-      setMetodoPagoId('');
-      setMostrarNotas(false);
-      setNotas('');
-      setImagenes([]);
-      setError('');
+      if (modoEdicion && datosIniciales) {
+        // Cargar datos para edición
+        setTipoActivo(datosIniciales.tipo);
+        setMonto(datosIniciales.monto);
+        setConcepto(datosIniciales.concepto);
+        setMetodoPagoId(datosIniciales.metodo_pago_id.toString());
+        setServicioId(datosIniciales.servicio_id?.toString() || '');
+        setMostrarNotas(!!datosIniciales.notas);
+        setNotas(datosIniciales.notas || '');
+        setImagenes([]);
+        setError('');
+      } else {
+        // Resetear para nuevo movimiento
+        setTipoActivo('gasto');
+        setMonto('');
+        setConcepto('');
+        setMetodoPagoId('');
+        setServicioId('');
+        setMostrarNotas(false);
+        setNotas('');
+        setImagenes([]);
+        setError('');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, modoEdicion, datosIniciales]);
 
   // Bloquear scroll del body cuando el modal está abierto
   useEffect(() => {
@@ -72,6 +115,19 @@ export default function ModalMovimiento({
     setImagenes(prev => prev.filter((_, i) => i !== index));
   }, []);
 
+  const handleServicioChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const servicioIdSeleccionado = e.target.value;
+    setServicioId(servicioIdSeleccionado);
+
+    // Si se seleccionó un servicio, autocompletar el monto con el costo_referencia
+    if (servicioIdSeleccionado) {
+      const servicio = servicios.find(s => s.id_servicio.toString() === servicioIdSeleccionado);
+      if (servicio) {
+        setMonto(parseFloat(servicio.costo_referencia).toFixed(2));
+      }
+    }
+  }, [servicios]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -94,12 +150,20 @@ export default function ModalMovimiento({
       formData.append('concepto', concepto.trim());
       formData.append('metodo_pago_id', metodoPagoId);
 
+      // Si es ingreso y se seleccionó un servicio, incluirlo
+      if (tipoActivo === 'ingreso' && servicioId) {
+        formData.append('servicio_id', servicioId);
+      }
+
       if (mostrarNotas && notas.trim()) {
         formData.append('notas', notas.trim());
       }
 
       if (imagenes.length > 0) {
+        console.log('📎 Agregando comprobante:', imagenes[0].name, imagenes[0].type, imagenes[0].size, 'bytes');
         formData.append('comprobante', imagenes[0]);
+      } else {
+        console.log('ℹ️ No hay comprobante para agregar');
       }
 
       await onSubmit(formData, tipoActivo);
@@ -109,7 +173,7 @@ export default function ModalMovimiento({
     } finally {
       setIsSubmitting(false);
     }
-  }, [monto, concepto, metodoPagoId, mostrarNotas, notas, imagenes, tipoActivo, onSubmit, onClose]);
+  }, [monto, concepto, metodoPagoId, servicioId, mostrarNotas, notas, imagenes, tipoActivo, onSubmit, onClose]);
 
   return (
     <AnimatePresence>
@@ -140,7 +204,7 @@ export default function ModalMovimiento({
             <div className="border-b border-gray-200">
               <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <h2 className="text-lg font-semibold text-[color:var(--text)]">
-                  Agregar Movimiento
+                  {modoEdicion ? 'Editar Movimiento' : 'Agregar Movimiento'}
                 </h2>
                 <button
                   onClick={onClose}
@@ -152,32 +216,43 @@ export default function ModalMovimiento({
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-1 px-5 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setTipoActivo('gasto')}
-                  disabled={isSubmitting}
-                  className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    tipoActivo === 'gasto'
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  } disabled:opacity-50`}
-                >
-                  Gasto
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTipoActivo('ingreso')}
-                  disabled={isSubmitting}
-                  className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    tipoActivo === 'ingreso'
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  } disabled:opacity-50`}
-                >
-                  Ingreso
-                </button>
-              </div>
+              {!modoEdicion && (
+                <div className="flex gap-1 px-5 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setTipoActivo('gasto')}
+                    disabled={isSubmitting}
+                    className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      tipoActivo === 'gasto'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    } disabled:opacity-50`}
+                  >
+                    Gasto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoActivo('ingreso')}
+                    disabled={isSubmitting}
+                    className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      tipoActivo === 'ingreso'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    } disabled:opacity-50`}
+                  >
+                    Ingreso
+                  </button>
+                </div>
+              )}
+              {modoEdicion && (
+                <div className="px-5 pb-2">
+                  <div className={`inline-flex rounded-lg px-4 py-2 text-sm font-medium text-white ${
+                    tipoActivo === 'ingreso' ? 'bg-green-500' : 'bg-red-500'
+                  }`}>
+                    {tipoActivo === 'ingreso' ? 'Ingreso' : 'Gasto'}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Content - Scrollable */}
@@ -187,6 +262,28 @@ export default function ModalMovimiento({
                 {error && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                     {error}
+                  </div>
+                )}
+
+                {/* Servicio (solo para ingresos) */}
+                {tipoActivo === 'ingreso' && (
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[color:var(--text)]">
+                      Servicio (opcional)
+                    </label>
+                    <select
+                      value={servicioId}
+                      onChange={handleServicioChange}
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[color:var(--text)] outline-none transition-colors focus:border-[color:var(--brand)]"
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Seleccionar servicio</option>
+                      {servicios.map((servicio) => (
+                        <option key={servicio.id_servicio} value={servicio.id_servicio}>
+                          {servicio.nombre} - ${parseFloat(servicio.costo_referencia).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -369,7 +466,7 @@ export default function ModalMovimiento({
                   className="w-full rounded-full px-5 py-3 text-center font-medium text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--brand)' }}
                 >
-                  {isSubmitting ? 'Guardando...' : 'Guardar'}
+                  {isSubmitting ? (modoEdicion ? 'Actualizando...' : 'Guardando...') : (modoEdicion ? 'Actualizar' : 'Guardar')}
                 </button>
               </div>
             </form>

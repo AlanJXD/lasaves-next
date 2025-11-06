@@ -137,8 +137,18 @@ export const finanzasService = {
     let body: FormData | string;
     let headers: Record<string, string> = {};
 
-    if (data.comprobante) {
+    console.log('🔧 crearGasto recibido:', {
+      ...data,
+      comprobante: data.comprobante ? {
+        nombre: data.comprobante.name,
+        tipo: data.comprobante.type,
+        tamano: data.comprobante.size
+      } : null
+    });
+
+    if (data.comprobante && data.comprobante instanceof File) {
       // Con archivo, usar FormData
+      console.log('✅ Usando FormData (con archivo)');
       const formData = new FormData();
       formData.append('concepto', data.concepto);
       formData.append('monto', data.monto.toString());
@@ -148,6 +158,8 @@ export const finanzasService = {
       formData.append('comprobante', data.comprobante);
       body = formData;
     } else {
+      console.log('📝 Usando JSON (sin archivo)');
+
       // Sin archivo, usar JSON
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify({
@@ -171,6 +183,72 @@ export const finanzasService = {
     }
 
     return response.json();
+  },
+
+  /**
+   * Obtiene un gasto por ID
+   */
+  async obtenerGastoPorId(id: number): Promise<Gasto> {
+    const response = await authService.authenticatedFetch(`/api/gastos/${id}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al obtener gasto');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Actualiza un gasto
+   */
+  async actualizarGasto(id: number, data: {
+    concepto?: string;
+    monto?: number;
+    metodo_pago_id?: number;
+    notas?: string;
+  }): Promise<{ mensaje: string; gasto: Gasto }> {
+    console.log('🔧 Actualizando gasto:', id, data);
+
+    const response = await authService.authenticatedFetch(`/api/gastos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    console.log('📡 Respuesta actualizar gasto:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Error al actualizar gasto:', error);
+      throw new Error(error.error || 'Error al actualizar gasto');
+    }
+
+    const resultado = await response.json();
+    console.log('✅ Gasto actualizado:', resultado);
+    return resultado;
+  },
+
+  /**
+   * Elimina un gasto
+   */
+  async eliminarGasto(id: number): Promise<{ mensaje: string }> {
+    console.log('🗑️ Eliminando gasto:', id);
+
+    const response = await authService.authenticatedFetch(`/api/gastos/${id}`, {
+      method: 'DELETE',
+    });
+
+    console.log('📡 Respuesta eliminar gasto:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Error al eliminar gasto:', error);
+      throw new Error(error.error || 'Error al eliminar gasto');
+    }
+
+    const resultado = await response.json();
+    console.log('✅ Gasto eliminado:', resultado);
+    return resultado;
   },
 
   /**
@@ -244,8 +322,18 @@ export const finanzasService = {
     let body: FormData | string;
     let headers: Record<string, string> = {};
 
-    if (data.comprobante) {
+    console.log('🔧 crearIngreso recibido:', {
+      ...data,
+      comprobante: data.comprobante ? {
+        nombre: data.comprobante.name,
+        tipo: data.comprobante.type,
+        tamano: data.comprobante.size
+      } : null
+    });
+
+    if (data.comprobante && data.comprobante instanceof File) {
       // Con archivo, usar FormData
+      console.log('✅ Usando FormData (con archivo)');
       const formData = new FormData();
       if (data.servicio_id) formData.append('servicio_id', data.servicio_id.toString());
       if (data.concepto) formData.append('concepto', data.concepto);
@@ -256,6 +344,8 @@ export const finanzasService = {
       formData.append('comprobante', data.comprobante);
       body = formData;
     } else {
+      console.log('📝 Usando JSON (sin archivo)');
+
       // Sin archivo, usar JSON
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify({
@@ -280,6 +370,73 @@ export const finanzasService = {
     }
 
     return response.json();
+  },
+
+  /**
+   * Obtiene un ingreso por ID
+   */
+  async obtenerIngresoPorId(id: number): Promise<Ingreso> {
+    const response = await authService.authenticatedFetch(`/api/ingresos/${id}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al obtener ingreso');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Actualiza un ingreso
+   */
+  async actualizarIngreso(id: number, data: {
+    servicio_id?: number;
+    concepto?: string;
+    monto?: number;
+    metodo_pago_id?: number;
+    notas?: string;
+  }): Promise<{ mensaje: string; ingreso: Ingreso }> {
+    console.log('🔧 Actualizando ingreso:', id, data);
+
+    const response = await authService.authenticatedFetch(`/api/ingresos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    console.log('📡 Respuesta actualizar ingreso:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Error al actualizar ingreso:', error);
+      throw new Error(error.error || 'Error al actualizar ingreso');
+    }
+
+    const resultado = await response.json();
+    console.log('✅ Ingreso actualizado:', resultado);
+    return resultado;
+  },
+
+  /**
+   * Elimina un ingreso
+   */
+  async eliminarIngreso(id: number): Promise<{ mensaje: string }> {
+    console.log('🗑️ Eliminando ingreso:', id);
+
+    const response = await authService.authenticatedFetch(`/api/ingresos/${id}`, {
+      method: 'DELETE',
+    });
+
+    console.log('📡 Respuesta eliminar ingreso:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Error al eliminar ingreso:', error);
+      throw new Error(error.error || 'Error al eliminar ingreso');
+    }
+
+    const resultado = await response.json();
+    console.log('✅ Ingreso eliminado:', resultado);
+    return resultado;
   },
 
   /**

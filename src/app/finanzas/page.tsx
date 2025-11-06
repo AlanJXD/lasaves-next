@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from "recharts";
 import { PlusIcon, MinusIcon } from "@heroicons/react/24/solid";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModalMovimiento from "@/components/ModalMovimiento";
+import ModalDetalleMovimiento from "@/components/ModalDetalleMovimiento";
+import Toast from "@/components/Toast";
 import { finanzasService, Gasto, Ingreso, MetodoPago } from "@/lib/finanzas";
 
 type Periodo = "General" | "Día" | "Semana" | "Mes";
@@ -58,6 +60,12 @@ export default function FinanzasPage() {
   const [periodo, setPeriodo] = useState<Periodo>("General");
   const [filtro, setFiltro] = useState<Filtro>("Todos");
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
+  const [movimientoSeleccionado, setMovimientoSeleccionado] = useState<{
+    id: string;
+    tipo: "Ingreso" | "Gasto";
+    datos?: any;
+  } | null>(null);
 
   // Estado de datos
   const [ingresos, setIngresos] = useState(0);
@@ -66,6 +74,22 @@ export default function FinanzasPage() {
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMensaje, setToastMensaje] = useState("Movimiento agregado exitosamente");
+
+  // Ref para el audio de notificación
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Inicializar audio
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/notification.mp3');
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   // Cargar métodos de pago al montar
   useEffect(() => {
@@ -137,36 +161,212 @@ export default function FinanzasPage() {
     setModalAbierto(true);
   };
 
+  const handleAbrirDetalle = (id: string, tipo: "Ingreso" | "Gasto") => {
+    setMovimientoSeleccionado({ id, tipo });
+    setModalDetalleAbierto(true);
+  };
+
+  const handleEditarMovimiento = (id: number, tipo: "Ingreso" | "Gasto", detalles: any) => {
+    // Cerrar modal de detalle
+    setModalDetalleAbierto(false);
+
+    // Abrir modal de edición con los datos
+    const datosEdicion = {
+      tipo: tipo === "Ingreso" ? 'ingreso' as const : 'gasto' as const,
+      id: id,
+      monto: detalles.monto,
+      concepto: tipo === "Gasto" ? detalles.concepto : (detalles.concepto || detalles.servicio?.nombre || ''),
+      metodo_pago_id: detalles.metodo_pago.id_metodo,
+      servicio_id: tipo === "Ingreso" ? detalles.servicio_id : undefined,
+      notas: detalles.notas || undefined,
+      comprobante_url: detalles.comprobante_url || undefined,
+    };
+
+    // Necesitamos pasar estos datos al modal
+    setMovimientoSeleccionado({ id: `${tipo === "Ingreso" ? 'i' : 'g'}-${id}`, tipo, datos: datosEdicion });
+    setModalAbierto(true);
+  };
+
+  const handleEliminarMovimiento = async (id: number, tipo: "Ingreso" | "Gasto") => {
+    try {
+      // Optimistic update: remover de la lista inmediatamente
+      const movimientoId = `${tipo === "Ingreso" ? 'i' : 'g'}-${id}`;
+      const movimientoEliminado = movimientos.find(m => m.id === movimientoId);
+
+      if (movimientoEliminado) {
+        // Actualizar estados
+        if (tipo === "Ingreso") {
+          setIngresos(prev => prev - movimientoEliminado.monto);
+        } else {
+          setGastos(prev => prev - movimientoEliminado.monto);
+        }
+
+        setMovimientos(prev => prev.filter(m => m.id !== movimientoId));
+      }
+
+      // Llamar a la API
+      if (tipo === "Ingreso") {
+        await finanzasService.eliminarIngreso(id);
+      } else {
+        await finanzasService.eliminarGasto(id);
+      }
+
+      // Mostrar toast de éxito
+      setToastMensaje("Movimiento eliminado exitosamente");
+      setToastVisible(true);
+      if (audioRef.current) {
+        audioRef.current.play().catch(err => {
+          console.error("Error al reproducir sonido:", err);
+        });
+      }
+    } catch (err) {
+      console.error("Error al eliminar movimiento:", err);
+      // Recargar datos si falla
+      cargarDatos();
+    }
+  };
+
   const handleGuardarMovimiento = async (
     formData: FormData,
     tipo: "ingreso" | "gasto"
   ) => {
-    try {
-      const data = {
-        concepto: formData.get("concepto") as string,
-        monto: parseFloat(formData.get("monto") as string),
-        metodo_pago_id: parseInt(formData.get("metodo_pago_id") as string),
-        notas: formData.get("notas") as string | undefined,
-        comprobante: formData.get("comprobante") as File | undefined,
+    const comprobanteFile = formData.get("comprobante");
+    const esEdicion = movimientoSeleccionado?.datos !== undefined;
+
+    console.log('📋 FormData recibido:', {
+      concepto: formData.get("concepto"),
+      monto: formData.get("monto"),
+      metodo_pago_id: formData.get("metodo_pago_id"),
+      servicio_id: formData.get("servicio_id"),
+      comprobante: comprobanteFile,
+      esFile: comprobanteFile instanceof File,
+      nombre: comprobanteFile instanceof File ? comprobanteFile.name : null,
+      esEdicion
+    });
+
+    const data = {
+      concepto: formData.get("concepto") as string,
+      monto: parseFloat(formData.get("monto") as string),
+      metodo_pago_id: parseInt(formData.get("metodo_pago_id") as string),
+      servicio_id: formData.get("servicio_id") ? parseInt(formData.get("servicio_id") as string) : undefined,
+      notas: formData.get("notas") as string | undefined,
+      comprobante: comprobanteFile instanceof File ? comprobanteFile : undefined,
+    };
+
+    if (esEdicion) {
+      // MODO EDICIÓN
+      const movimientoId = movimientoSeleccionado!.datos.id;
+      const movimientoIdStr = `${tipo === "ingreso" ? 'i' : 'g'}-${movimientoId}`;
+      const movimientoAnterior = movimientos.find(m => m.id === movimientoIdStr);
+
+      // Guardar estados anteriores
+      const ingresosAnterior = ingresos;
+      const gastosAnterior = gastos;
+      const movimientosAnterior = movimientos;
+
+      try {
+        // Actualizar optimistamente
+        if (movimientoAnterior) {
+          // Restar el monto anterior y sumar el nuevo
+          if (tipo === "ingreso") {
+            setIngresos(prev => prev - movimientoAnterior.monto + data.monto);
+          } else {
+            setGastos(prev => prev - movimientoAnterior.monto + data.monto);
+          }
+
+          // Actualizar el movimiento en la lista
+          setMovimientos(prev => prev.map(m =>
+            m.id === movimientoIdStr
+              ? { ...m, concepto: data.concepto, monto: data.monto }
+              : m
+          ));
+        }
+
+        // Llamar a la API
+        if (tipo === "ingreso") {
+          await finanzasService.actualizarIngreso(movimientoId, data);
+        } else {
+          await finanzasService.actualizarGasto(movimientoId, data);
+        }
+
+        // Éxito
+        setToastMensaje("Movimiento actualizado exitosamente");
+        setToastVisible(true);
+        if (audioRef.current) {
+          audioRef.current.play().catch(err => {
+            console.error("Error al reproducir sonido:", err);
+          });
+        }
+
+        // Limpiar selección
+        setMovimientoSeleccionado(null);
+      } catch (err) {
+        console.error("Error al actualizar movimiento:", err);
+
+        // REVERTIR cambios
+        setIngresos(ingresosAnterior);
+        setGastos(gastosAnterior);
+        setMovimientos(movimientosAnterior);
+
+        throw err;
+      }
+    } else {
+      // MODO CREACIÓN
+      const nuevoMovimiento: Movimiento = {
+        id: `temp-${Date.now()}`,
+        tipo: tipo === "ingreso" ? "Ingreso" : "Gasto",
+        concepto: data.concepto,
+        monto: data.monto,
+        fecha: new Date().toISOString(),
       };
 
-      if (tipo === "ingreso") {
-        await finanzasService.crearIngreso({
-          ...data,
-          fecha_ingreso: new Date().toISOString(),
-        });
-      } else {
-        await finanzasService.crearGasto({
-          ...data,
-          fecha_gasto: new Date().toISOString(),
-        });
-      }
+      // Guardar estados anteriores
+      const ingresosAnterior = ingresos;
+      const gastosAnterior = gastos;
+      const movimientosAnterior = movimientos;
 
-      // Recargar datos
-      await cargarDatos();
-    } catch (err) {
-      console.error("Error al guardar movimiento:", err);
-      throw err;
+      try {
+        // ACTUALIZACIÓN OPTIMISTA
+        if (tipo === "ingreso") {
+          setIngresos(prev => prev + data.monto);
+        } else {
+          setGastos(prev => prev + data.monto);
+        }
+
+        // Agregar el nuevo movimiento al inicio
+        setMovimientos(prev => [nuevoMovimiento, ...prev]);
+
+        // Llamar a la API
+        if (tipo === "ingreso") {
+          await finanzasService.crearIngreso({
+            ...data,
+            fecha_ingreso: new Date().toISOString(),
+          });
+        } else {
+          await finanzasService.crearGasto({
+            ...data,
+            fecha_gasto: new Date().toISOString(),
+          });
+        }
+
+        // Éxito
+        setToastMensaje("Movimiento agregado exitosamente");
+        setToastVisible(true);
+        if (audioRef.current) {
+          audioRef.current.play().catch(err => {
+            console.error("Error al reproducir sonido:", err);
+          });
+        }
+      } catch (err) {
+        console.error("Error al guardar movimiento:", err);
+
+        // REVERTIR cambios
+        setIngresos(ingresosAnterior);
+        setGastos(gastosAnterior);
+        setMovimientos(movimientosAnterior);
+
+        throw err;
+      }
     }
   };
 
@@ -301,7 +501,6 @@ export default function FinanzasPage() {
                 </div>
 
                 {/* Resumen compacto */}
-                {/* Resumen compacto */}
                 <div className="grid w-full grid-cols-2 gap-3">
                   {[
                     {
@@ -415,7 +614,8 @@ export default function FinanzasPage() {
                       {historialFiltrado.map((m) => (
                         <li
                           key={m.id}
-                          className="flex items-center justify-between rounded-xl bg-white px-4 py-3"
+                          onClick={() => handleAbrirDetalle(m.id, m.tipo)}
+                          className="flex items-center justify-between rounded-xl bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 active:scale-[0.98] transition-all"
                         >
                           <div className="flex items-center gap-3">
                             <span
@@ -433,7 +633,7 @@ export default function FinanzasPage() {
                             </span>
                             <div>
                               <div className="text-sm font-medium text-[color:var(--text)]">
-                                {m.categoria}
+                                {m.concepto}
                               </div>
                               <div className="text-xs text-[color:var(--muted,#8a94a3)]">
                                 {m.tipo}
@@ -471,12 +671,34 @@ export default function FinanzasPage() {
           </div>
         </section>
 
-        {/* Modal de agregar movimiento */}
+        {/* Modal de agregar/editar movimiento */}
         <ModalMovimiento
           isOpen={modalAbierto}
-          onClose={() => setModalAbierto(false)}
+          onClose={() => {
+            setModalAbierto(false);
+            setMovimientoSeleccionado(null);
+          }}
           metodosPago={metodosPago}
           onSubmit={handleGuardarMovimiento}
+          modoEdicion={movimientoSeleccionado?.datos !== undefined}
+          datosIniciales={movimientoSeleccionado?.datos}
+        />
+
+        {/* Toast de éxito */}
+        <Toast
+          mensaje={toastMensaje}
+          visible={toastVisible}
+          onClose={() => setToastVisible(false)}
+        />
+
+        {/* Modal de detalle de movimiento */}
+        <ModalDetalleMovimiento
+          isOpen={modalDetalleAbierto}
+          onClose={() => setModalDetalleAbierto(false)}
+          movimientoId={movimientoSeleccionado?.id || null}
+          tipo={movimientoSeleccionado?.tipo || null}
+          onEditar={handleEditarMovimiento}
+          onEliminar={handleEliminarMovimiento}
         />
       </main>
     </ProtectedRoute>

@@ -175,7 +175,8 @@ export const authService = {
       headers: {
         ...options.headers,
         'Authorization': `Bearer ${accessToken}`,
-        ...(!(options.body instanceof FormData) && {
+        // Solo agregar Content-Type si hay body y no es FormData
+        ...(options.body && !(options.body instanceof FormData) && {
           'Content-Type': 'application/json',
         }),
       },
@@ -193,7 +194,8 @@ export const authService = {
           headers: {
             ...options.headers,
             'Authorization': `Bearer ${refreshResponse.accessToken}`,
-            ...(!(options.body instanceof FormData) && {
+            // Solo agregar Content-Type si hay body y no es FormData
+            ...(options.body && !(options.body instanceof FormData) && {
               'Content-Type': 'application/json',
             }),
           },
