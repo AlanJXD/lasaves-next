@@ -9,12 +9,14 @@ import {
   ShieldCheckIcon as ShieldSolid,
   UserCircleIcon as UserFilled,
 } from "@heroicons/react/24/solid";
+import { useAuthorization } from "@/hooks/useAuthorization";
+import { MODULES, Module } from "@/lib/authorization";
 
 const items = [
-  { href: "/",               label: "Inicio",          outline: Home,        filled: HomeSolid },
-  { href: "/finanzas",       label: "Finanzas",        outline: Wallet,      filled: WalletSolid },
-  { href: "/administracion", label: "Administración",  outline: ShieldCheck, filled: ShieldSolid },
-  { href: "/perfil",         label: "Perfil",          outline: UserRound,   filled: UserFilled },
+  { href: "/",               label: "Inicio",          outline: Home,        filled: HomeSolid, module: MODULES.INICIO },
+  { href: "/finanzas",       label: "Finanzas",        outline: Wallet,      filled: WalletSolid, module: MODULES.FINANZAS },
+  { href: "/administracion", label: "Administración",  outline: ShieldCheck, filled: ShieldSolid, module: MODULES.ADMINISTRACION },
+  { href: "/perfil",         label: "Perfil",          outline: UserRound,   filled: UserFilled, module: MODULES.PERFIL },
 ];
 
 function isActivePath(pathname: string | null, href: string) {
@@ -25,6 +27,10 @@ function isActivePath(pathname: string | null, href: string) {
 
 export default function BottomTab() {
   const pathname = usePathname();
+  const { canAccessModule } = useAuthorization();
+
+  // Filtrar items según los permisos del usuario
+  const allowedItems = items.filter(item => canAccessModule(item.module));
 
   return (
     <>
@@ -45,7 +51,7 @@ export default function BottomTab() {
           }}
           aria-label="Navegación principal"
         >
-          {items.map(({ href, label, outline: OutlineIcon, filled: FilledIcon }) => {
+          {allowedItems.map(({ href, label, outline: OutlineIcon, filled: FilledIcon }) => {
             const active = isActivePath(pathname, href);
             const Icon = active ? FilledIcon : OutlineIcon;
 

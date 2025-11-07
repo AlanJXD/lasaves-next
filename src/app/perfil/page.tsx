@@ -8,6 +8,8 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/solid";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
+import { MODULES } from "@/lib/authorization";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function PerfilPage() {
@@ -32,6 +34,7 @@ export default function PerfilPage() {
 
   return (
     <ProtectedRoute>
+      <RoleProtectedRoute module={MODULES.PERFIL}>
       <main
         className="relative px-5"
         style={{
@@ -101,6 +104,7 @@ export default function PerfilPage() {
         </section>
       </div>
     </main>
+      </RoleProtectedRoute>
     </ProtectedRoute>
   );
 }

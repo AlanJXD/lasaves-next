@@ -1,11 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import {
   UserGroupIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/solid";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
+import { MODULES } from "@/lib/authorization";
 
 export default function AdministracionPage() {
   return (
+    <ProtectedRoute>
+      <RoleProtectedRoute module={MODULES.ADMINISTRACION}>
     <main className="px-5 py-8">
       <div className="mx-auto w-full max-w-6xl">
         <h1 className="text-xl font-semibold text-[color:var(--text)] text-center">
@@ -108,5 +115,7 @@ export default function AdministracionPage() {
         </div>
       </div>
     </main>
+      </RoleProtectedRoute>
+    </ProtectedRoute>
   );
 }

@@ -5,9 +5,12 @@ import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from "recharts";
 import { PlusIcon, MinusIcon } from "@heroicons/react/24/solid";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
+import { MODULES } from "@/lib/authorization";
 import ModalMovimiento from "@/components/ModalMovimiento";
 import ModalDetalleMovimiento from "@/components/ModalDetalleMovimiento";
 import Toast from "@/components/Toast";
+import { FinanzasShimmer } from "@/components/FinanzasShimmer";
 import { finanzasService, Gasto, Ingreso, MetodoPago } from "@/lib/finanzas";
 
 type Periodo = "General" | "Día" | "Semana" | "Mes";
@@ -389,6 +392,7 @@ export default function FinanzasPage() {
 
   return (
     <ProtectedRoute>
+      <RoleProtectedRoute module={MODULES.FINANZAS}>
       <main
         className="relative px-5 pb-24"
         style={{
@@ -411,7 +415,11 @@ export default function FinanzasPage() {
           </svg>
         </div>
 
-        {/* CARD principal flotando sobre la media luna */}
+        {/* Mostrar shimmer mientras carga */}
+        {isLoading ? (
+          <FinanzasShimmer onAbrirModal={handleAbrirModal} />
+        ) : (
+        /* CARD principal flotando sobre la media luna */
         <section className="-mt-16 relative z-10">
           <div className="mx-auto w-full max-w-md">
             <div className="relative rounded-2xl bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
@@ -516,22 +524,22 @@ export default function FinanzasPage() {
                   ].map((item) => {
                     const texto = mxn.format(item.valor);
 
-                    // Tamaño dinámico por longitud (px) – inline para que SIEMPRE gane
+                    // Tamaño dinámico por longitud (px)
                     const fontPx =
                       texto.length > 15
-                        ? 9
-                        : texto.length > 13
                         ? 10
-                        : texto.length > 11
+                        : texto.length > 13
                         ? 11
-                        : 14; // 14px ≈ text-sm
+                        : texto.length > 11
+                        ? 12
+                        : 14;
 
                     return (
                       <div
                         key={item.label}
-                        className="flex items-center justify-between rounded-xl bg-[color:var(--input)] px-3 py-2"
+                        className="flex flex-col gap-2 rounded-xl bg-[color:var(--input)] px-4 py-3"
                       >
-                        <span className="flex items-center gap-2 text-sm">
+                        <span className="flex items-center gap-2 text-xs text-[color:var(--text)]/70">
                           <span
                             className="inline-block size-2.5 rounded-full"
                             style={{ backgroundColor: item.color }}
@@ -540,9 +548,9 @@ export default function FinanzasPage() {
                         </span>
 
                         <span
-                          className="font-medium text-[color:var(--text)] leading-none transition-all duration-200 ease-in-out"
+                          className="font-semibold text-[color:var(--text)] leading-tight transition-all duration-200 ease-in-out"
                           style={{
-                            fontSize: `${fontPx}px`, // ← prioridad máxima
+                            fontSize: `${fontPx}px`,
                             fontVariantNumeric: "tabular-nums",
                             fontFeatureSettings: "'tnum'",
                           }}
@@ -593,14 +601,7 @@ export default function FinanzasPage() {
 
               {/* Lista de movimientos */}
               <div className="rounded-2xl bg-[color:var(--input)] p-4">
-                {isLoading ? (
-                  <div className="rounded-xl bg-white p-8 text-center">
-                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[color:var(--brand)] border-t-transparent" />
-                    <p className="mt-2 text-sm text-[color:var(--muted,#8a94a3)]">
-                      Cargando...
-                    </p>
-                  </div>
-                ) : error ? (
+                {error ? (
                   <div className="rounded-xl bg-white p-4 text-center text-red-600">
                     {error}
                   </div>
@@ -670,6 +671,7 @@ export default function FinanzasPage() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Modal de agregar/editar movimiento */}
         <ModalMovimiento
@@ -701,6 +703,7 @@ export default function FinanzasPage() {
           onEliminar={handleEliminarMovimiento}
         />
       </main>
+      </RoleProtectedRoute>
     </ProtectedRoute>
   );
 }
