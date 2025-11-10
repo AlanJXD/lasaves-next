@@ -64,7 +64,7 @@ export const estadisticasService = {
     return response.json();
   },
 
-  /**
+  /**.
    * Obtiene estadísticas de gastos
    */
   async obtenerGastos(): Promise<EstadisticasGastos> {
