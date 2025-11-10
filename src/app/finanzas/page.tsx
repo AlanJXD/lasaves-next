@@ -340,17 +340,29 @@ export default function FinanzasPage() {
         setMovimientos(prev => [nuevoMovimiento, ...prev]);
 
         // Llamar a la API
+        let respuesta;
         if (tipo === "ingreso") {
-          await finanzasService.crearIngreso({
+          respuesta = await finanzasService.crearIngreso({
             ...data,
             fecha_ingreso: new Date().toISOString(),
           });
         } else {
-          await finanzasService.crearGasto({
+          respuesta = await finanzasService.crearGasto({
             ...data,
             fecha_gasto: new Date().toISOString(),
           });
         }
+
+        // Actualizar el ID temporal con el ID real de la respuesta
+        const idReal = tipo === "ingreso"
+          ? `i-${respuesta.ingreso.id_ingreso}`
+          : `g-${respuesta.gasto.id_gasto}`;
+
+        setMovimientos(prev => prev.map(m =>
+          m.id === nuevoMovimiento.id
+            ? { ...m, id: idReal }
+            : m
+        ));
 
         // Éxito
         setToastMensaje("Movimiento agregado exitosamente");
