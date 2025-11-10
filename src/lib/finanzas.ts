@@ -207,12 +207,46 @@ export const finanzasService = {
     monto?: number;
     metodo_pago_id?: number;
     notas?: string;
+    comprobante?: File;
   }): Promise<{ mensaje: string; gasto: Gasto }> {
-    console.log('🔧 Actualizando gasto:', id, data);
+    let body: FormData | string;
+    let headers: Record<string, string> = {};
+
+    console.log('🔧 Actualizando gasto:', id, {
+      ...data,
+      comprobante: data.comprobante ? {
+        nombre: data.comprobante.name,
+        tipo: data.comprobante.type,
+        tamano: data.comprobante.size
+      } : null
+    });
+
+    if (data.comprobante && data.comprobante instanceof File) {
+      // Con archivo, usar FormData
+      console.log('✅ Usando FormData (con archivo)');
+      const formData = new FormData();
+      if (data.concepto) formData.append('concepto', data.concepto);
+      if (data.monto !== undefined) formData.append('monto', data.monto.toString());
+      if (data.metodo_pago_id) formData.append('metodo_pago_id', data.metodo_pago_id.toString());
+      if (data.notas) formData.append('notas', data.notas);
+      formData.append('comprobante', data.comprobante);
+      body = formData;
+    } else {
+      console.log('📝 Usando JSON (sin archivo)');
+      // Sin archivo, usar JSON
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({
+        concepto: data.concepto,
+        monto: data.monto,
+        metodo_pago_id: data.metodo_pago_id,
+        notas: data.notas,
+      });
+    }
 
     const response = await authService.authenticatedFetch(`/api/gastos/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      headers,
+      body,
     });
 
     console.log('📡 Respuesta actualizar gasto:', response.status, response.statusText);
@@ -395,12 +429,48 @@ export const finanzasService = {
     monto?: number;
     metodo_pago_id?: number;
     notas?: string;
+    comprobante?: File;
   }): Promise<{ mensaje: string; ingreso: Ingreso }> {
-    console.log('🔧 Actualizando ingreso:', id, data);
+    let body: FormData | string;
+    let headers: Record<string, string> = {};
+
+    console.log('🔧 Actualizando ingreso:', id, {
+      ...data,
+      comprobante: data.comprobante ? {
+        nombre: data.comprobante.name,
+        tipo: data.comprobante.type,
+        tamano: data.comprobante.size
+      } : null
+    });
+
+    if (data.comprobante && data.comprobante instanceof File) {
+      // Con archivo, usar FormData
+      console.log('✅ Usando FormData (con archivo)');
+      const formData = new FormData();
+      if (data.servicio_id) formData.append('servicio_id', data.servicio_id.toString());
+      if (data.concepto) formData.append('concepto', data.concepto);
+      if (data.monto !== undefined) formData.append('monto', data.monto.toString());
+      if (data.metodo_pago_id) formData.append('metodo_pago_id', data.metodo_pago_id.toString());
+      if (data.notas) formData.append('notas', data.notas);
+      formData.append('comprobante', data.comprobante);
+      body = formData;
+    } else {
+      console.log('📝 Usando JSON (sin archivo)');
+      // Sin archivo, usar JSON
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({
+        servicio_id: data.servicio_id,
+        concepto: data.concepto,
+        monto: data.monto,
+        metodo_pago_id: data.metodo_pago_id,
+        notas: data.notas,
+      });
+    }
 
     const response = await authService.authenticatedFetch(`/api/ingresos/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      headers,
+      body,
     });
 
     console.log('📡 Respuesta actualizar ingreso:', response.status, response.statusText);

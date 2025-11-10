@@ -13,7 +13,7 @@ import { useAuthorization } from "@/hooks/useAuthorization";
 import { MODULES, Module } from "@/lib/authorization";
 
 const items = [
-  { href: "/",               label: "Inicio",          outline: Home,        filled: HomeSolid, module: MODULES.INICIO },
+  { href: "/inicio",         label: "Inicio",          outline: Home,        filled: HomeSolid, module: MODULES.INICIO },
   { href: "/finanzas",       label: "Finanzas",        outline: Wallet,      filled: WalletSolid, module: MODULES.FINANZAS },
   { href: "/administracion", label: "Administración",  outline: ShieldCheck, filled: ShieldSolid, module: MODULES.ADMINISTRACION },
   { href: "/perfil",         label: "Perfil",          outline: UserRound,   filled: UserFilled, module: MODULES.PERFIL },
@@ -21,8 +21,10 @@ const items = [
 
 function isActivePath(pathname: string | null, href: string) {
   if (!pathname) return false;
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(href + "/");
+  // Tratar "/" como si fuera "/inicio" para la comparación
+  const normalizedPathname = pathname === "/" ? "/inicio" : pathname;
+  if (href === "/inicio") return normalizedPathname === "/inicio" || normalizedPathname === "/";
+  return normalizedPathname === href || normalizedPathname.startsWith(href + "/");
 }
 
 export default function BottomTab() {
