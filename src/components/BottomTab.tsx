@@ -45,7 +45,7 @@ export default function BottomTab() {
         <nav
           className="pointer-events-auto flex items-center justify-center gap-10 rounded-full px-8 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md"
           style={{
-            backgroundColor: "#cfd3da",
+            backgroundColor: "#ffffff",
             maxWidth: 520,
             width: "calc(100% - 44px)",
           }}
