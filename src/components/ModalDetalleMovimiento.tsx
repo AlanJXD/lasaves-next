@@ -260,7 +260,7 @@ export default function ModalDetalleMovimiento({
                       <p className="mb-3 text-xs text-[color:var(--muted,#8a94a3)]">Comprobante</p>
                       <div className="relative">
                         <img
-                          src={`http://localhost:3000${detalles.comprobante_url}`}
+                          src={detalles.comprobante_url}
                           alt="Comprobante"
                           className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={() => setImagenAmpliada(true)}
@@ -374,7 +374,7 @@ export default function ModalDetalleMovimiento({
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                   <img
-                    src={`http://localhost:3000${detalles.comprobante_url}`}
+                    src={detalles.comprobante_url}
                     alt="Comprobante ampliado"
                     className="max-h-full max-w-full rounded-lg"
                     onClick={(e) => e.stopPropagation()}
