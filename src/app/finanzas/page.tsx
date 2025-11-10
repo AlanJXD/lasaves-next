@@ -339,25 +339,23 @@ export default function FinanzasPage() {
         // Agregar el nuevo movimiento al inicio
         setMovimientos(prev => [nuevoMovimiento, ...prev]);
 
-        // Llamar a la API
-        let respuesta;
+        // Llamar a la API y obtener el ID real
+        let idReal: string;
         if (tipo === "ingreso") {
-          respuesta = await finanzasService.crearIngreso({
+          const respuesta = await finanzasService.crearIngreso({
             ...data,
             fecha_ingreso: new Date().toISOString(),
           });
+          idReal = `i-${respuesta.ingreso.id_ingreso}`;
         } else {
-          respuesta = await finanzasService.crearGasto({
+          const respuesta = await finanzasService.crearGasto({
             ...data,
             fecha_gasto: new Date().toISOString(),
           });
+          idReal = `g-${respuesta.gasto.id_gasto}`;
         }
 
         // Actualizar el ID temporal con el ID real de la respuesta
-        const idReal = tipo === "ingreso"
-          ? `i-${respuesta.ingreso.id_ingreso}`
-          : `g-${respuesta.gasto.id_gasto}`;
-
         setMovimientos(prev => prev.map(m =>
           m.id === nuevoMovimiento.id
             ? { ...m, id: idReal }
